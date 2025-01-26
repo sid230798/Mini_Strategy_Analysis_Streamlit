@@ -203,14 +203,24 @@ def main():
             win_rate = (results['Return'] > 0).mean() * 100
             avg_return = results['Return'].mean() * 100
             avg_days_held = results['Days Held'].mean()
+
+            # Profit Factor
+            winners = results[results['Return'] > 0]
+            losers = results[results['Return'] < 0]
+            total_gains = winners['Return'].sum()
+            total_losses = abs(losers['Return'].sum())
+            profit_factor = total_gains / total_losses if total_losses != 0 else float('inf')
+            
             
             # Display metrics
             st.subheader("Performance Metrics")
-            cols = st.columns(4)
+            cols = st.columns(5)  # Changed from 4 to 5 columns
             cols[0].metric("Total Trades", total_trades)
             cols[1].metric("Win Rate", f"{win_rate:.1f}%")
             cols[2].metric("Avg Return", f"{avg_return:.1f}%")
-            cols[3].metric("Avg Days Held", f"{avg_days_held:.1f}")
+            cols[3].metric("Profit Factor", f"{profit_factor:.2f}")
+            cols[4].metric("Avg Days Held", f"{avg_days_held:.1f}")
+
             
             # Show raw trades
             st.subheader("Trade Details")
