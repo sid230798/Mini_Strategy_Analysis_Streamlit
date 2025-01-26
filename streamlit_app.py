@@ -148,7 +148,7 @@ def main():
     with col2:
         start_date = st.date_input("Start Date", datetime(2023, 1, 1))
     with col3:
-        end_date = st.date_input("End Date", datetime(2023, 12, 31)))
+        end_date = st.date_input("End Date", datetime(2023, 12, 31))
     
     if st.button("Run Backtest"):
         with st.spinner("Fetching data and running backtest..."):
