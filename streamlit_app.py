@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import pandas_ta as ta
 from datetime import datetime, timedelta
 
 # Strategy parameters
@@ -15,19 +14,55 @@ params = {
     'rsi_overbought': 65
 }
 
+def calculate_rsi(close_prices, window=14):
+    """Calculate RSI using Wilder's smoothing (matches TradingView/pandas-ta)"""
+    delta = close_prices.diff()
+    
+    # Separate gains and losses
+    gain = delta.where(delta > 0, 0.0)
+    loss = -delta.where(delta < 0, 0.0)
+    
+    # Calculate initial averages
+    avg_gain = gain.rolling(window).mean()
+    avg_loss = loss.rolling(window).mean()
+    
+    # Wilder's smoothing: subsequent averages
+    for i in range(window, len(gain)):
+        avg_gain.iloc[i] = (avg_gain.iloc[i-1] * (window-1) + gain.iloc[i]) / window
+        avg_loss.iloc[i] = (avg_loss.iloc[i-1] * (window-1) + loss.iloc[i]) / window
+    
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def calculate_ema(close_prices, window=20):
+    """Custom EMA implementation"""
+    sma = close_prices.rolling(window=window).mean()[:window]
+    if len(sma) == 0:
+        return pd.Series([np.nan]*len(close_prices), index=close_prices.index)
+    
+    ema = [sma.iloc[-1]]
+    multiplier = 2 / (window + 1)
+    
+    for price in close_prices.iloc[window:]:
+        ema_val = (price - ema[-1]) * multiplier + ema[-1]
+        ema.append(ema_val)
+    
+    return pd.Series([np.nan]*window + ema[1:], index=close_prices.index)
+
 def implement_strategy(data):
     # Calculate indicators
     data['rolling_high'] = data['High'].shift(1).rolling(params['lookback_days']).max()
     data['vol_ma'] = data['Volume'].rolling(params['vol_ma_days']).mean().shift(1)
-    data['rsi'] = ta.rsi(data['Close'], 14).shift(1)
-    data['ema_50'] = ta.ema(data['Close'], 20).shift(1)  # Trend filter
+    data['rsi'] = calculate_rsi(data['Close'], 14).shift(1)
+    # data['ema_50'] = calculate_ema(data['Close'], 20).shift(1)  # Trend filter
 
     # Generate signals
     data['buy_signal'] = (
         (data['Close'] > data['rolling_high']) &
         (data['Volume'] > data['vol_ma'] * 1) &
-        (data['rsi'] < params['rsi_overbought']) &
-        (data['Close'] > data['ema_50'])
+        (data['rsi'] < params['rsi_overbought'])
+        # (data['Close'] > data['ema_50'])
     ).astype(int)
     return data
 
