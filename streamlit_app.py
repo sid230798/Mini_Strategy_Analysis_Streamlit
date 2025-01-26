@@ -146,9 +146,9 @@ def main():
     with col1:
         ticker = st.text_input("Stock Ticker", "BTC-USD")
     with col2:
-        start_date = st.date_input("Start Date", datetime(2024, 1, 1))
+        start_date = st.date_input("Start Date", datetime(2023, 1, 1))
     with col3:
-        end_date = st.date_input("End Date", datetime.today())
+        end_date = st.date_input("End Date", datetime(2023, 12, 31)))
     
     if st.button("Run Backtest"):
         with st.spinner("Fetching data and running backtest..."):
